@@ -1,0 +1,50 @@
+FROM python:3.11.6-slim-bookworm AS builder
+
+RUN python -m pip install \
+        --no-color \
+        --no-cache-dir \
+        --disable-pip-version-check \
+        --no-python-version-warning \
+        --break-system-packages \
+        --progress-bar off \
+        poetry setuptools wheel
+
+WORKDIR /opt/counter_app
+
+COPY ./counter_app/ ./
+
+RUN mkdir -p dist
+
+RUN poetry export \
+        --without-hashes \
+        --format constraints.txt \
+        --output dist/constraints.txt
+
+RUN poetry run python -m pip wheel \
+        --isolated \
+        --requirement dist/constraints.txt \
+        --wheel-dir dist/vendor
+
+RUN poetry build --format wheel
+
+FROM python:3.11.6-slim-bookworm AS runtime
+
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+WORKDIR /opt/counter_app
+
+COPY --from=builder /opt/counter_app/dist/vendor /opt/counter_app/dist/vendor
+COPY --from=builder /opt/counter_app/dist/*.whl /opt/counter_app/dist/
+COPY --from=builder /opt/counter_app/ ./
+
+RUN python -m pip install \
+    --no-index \
+    --no-deps \
+    --no-cache-dir \
+    /opt/counter_app/dist/vendor/*.whl
+
+RUN chown -R appuser:appgroup /opt/counter_app
+
+USER appuser
+
+CMD ["python", "-m", "counter_app"]

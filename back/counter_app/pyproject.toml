@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "counter-app"
+version = "0.1.0"
+description = ""
+authors = ["anetsesia"]
+readme = "README.md"
+packages = [{ include = "counter_app" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aiohttp = "^3.8.5"
+pytest-aiohttp = "^1.0.5"
+pytest-asyncio = "^0.21.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
